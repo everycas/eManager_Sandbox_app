@@ -71,14 +71,32 @@ def insert_new_doc(connection, collection, document):
     col.insert_one(doc)
 
 
+def new_doc_item(name: str, type: str, price: float, qnt: float):
 
+    """ Pattern for insert new item """
+
+    item_name = name
+    item_type = type
+    item_price = price
+    item_qnt = qnt
+
+    new_item = {
+
+        'name': item_name,
+        'type': item_type,
+        'price': item_price,
+        'quantity': item_qnt
+
+    }
+
+    return new_item
 
 
 c = connect_to_server()
-create_new_base(connection=c)
+# create_new_base(connection=c)
 
-# doc = {'test': 'test2'}
-# insert_new_doc(connection=c, collection='items', document=doc)
+item_doc = new_doc_item(name='Котлета пожарская', type='блюдо', price=120.45, qnt=1.0)
+insert_new_doc(connection=c, collection='items', document=item_doc)
 
 
 
