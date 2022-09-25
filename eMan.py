@@ -71,32 +71,53 @@ def insert_new_doc(connection, collection, document):
     col.insert_one(doc)
 
 
-def new_doc_item(name: str, type: str, price: float, qnt: float):
+def to_guid(num_string: str):
 
-    """ Pattern for insert new item """
+    """ Convert any number string to guid_code SH5 """
 
-    item_name = name
-    item_type = type
-    item_price = price
-    item_qnt = qnt
+    zero_add = ''
+    guid_mask = '{00000000-0000-0000-0000-'
+    postfix = '}'
 
-    new_item = {
+    if len(num_string) < 12:
+        diff = 12 - len(num_string)  # 6
+        for _ in range(diff):
+            zero_add += '0'
+            code = zero_add + num_string
+    elif len(num_string) > 12:
+        diff = len(num_string) - 12
+        code = num_string[diff:]
+    else:
+        code = num_string
 
-        'name': item_name,
-        'type': item_type,
-        'price': item_price,
-        'quantity': item_qnt
+    result = guid_mask + code + postfix
+    return result
+
+
+def new_dish_doc(guid: str, name: str, group: str, price: float, qnt: float):
+
+    """ Template - newDish """
+
+    dish = {
+
+        'guid': guid,           # dish guid / use to_guid def
+        'name': name,           # dish name
+        'type': 'Dish',         # item type
+        'group': group,         # dish group / parent
+        'munit': 'Portion',     # dish measure unit
+        'qnt': qnt,             # dish quantity
+        'price': price          # dish price
 
     }
 
-    return new_item
+    return dish
 
 
 c = connect_to_server()
 # create_new_base(connection=c)
 
-item_doc = new_doc_item(name='Котлета пожарская', type='блюдо', price=120.45, qnt=1.0)
-insert_new_doc(connection=c, collection='items', document=item_doc)
+new_dish = new_dish_doc(guid='', name='Beaf Steak', group='Meat', price=120.45, qnt=1.0)
+insert_new_doc(connection=c, collection='items', document=new_dish)
 
 
 
