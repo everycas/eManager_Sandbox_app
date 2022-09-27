@@ -5,7 +5,7 @@ import pymongo
 INI_NAME = 'eMan.ini'
 LOG_NAME = 'eMan.log'
 
-DB_NAME = 'data'
+DB_NAME = 'USER-10000001-DB'  # every new user (owner / admin) will get own new base
 SETS_COL = 'settings'
 ITEMS_COL = 'items'
 CORRS_COL = 'corrs'
@@ -37,8 +37,8 @@ def create_new_base(connection):
 
     """ Create new eMan base from pattern """
 
-    client = connection
-    db = client[DB_NAME]
+    # Create / select db
+    db = connection[DB_NAME]
     # create collections
     sets = db[SETS_COL]
     items = db[ITEMS_COL]
@@ -60,7 +60,7 @@ def create_new_base(connection):
     bills.insert_one(bills_doc)
 
 
-def insert_new_doc(connection, collection, document):
+def doc_insert(connection, collection, document):
 
     """ Insert new document to data collection """
 
@@ -94,7 +94,7 @@ def to_guid(num_string: str):
     return result
 
 
-def new_dish_doc(guid: str, name: str, group: str, price: float, qnt: float):
+def dish_doc(guid: str, name: str, group: str, price: float, qnt: float):
 
     """ Template - newDish """
 
@@ -116,8 +116,8 @@ def new_dish_doc(guid: str, name: str, group: str, price: float, qnt: float):
 c = connect_to_server()
 # create_new_base(connection=c)
 
-new_dish = new_dish_doc(guid='', name='Beaf Steak', group='Meat', price=120.45, qnt=1.0)
-insert_new_doc(connection=c, collection='items', document=new_dish)
+new_dish = dish_doc(guid='', name='Beaf Steak', group='Meat', price=120.45, qnt=1.0)
+doc_insert(connection=c, collection='items', document=new_dish)
 
 
 
