@@ -4,6 +4,7 @@ import pymongo
 
 INI_NAME = 'eMan.ini'
 LOG_NAME = 'eMan.log'
+DT_NOW = dt.datetime.now()
 
 DB_NAME = 'USER-10000001-DB'  # every new user (owner / admin) will get own new base
 SETS_COL = 'settings'
@@ -100,6 +101,8 @@ def to_guid(num_string: str):
 
     return result_guid
 
+
+# TESTS ------------------------------------------------- #
 
 SAMPLE_DOC_DISH_ITEM = {
     'guid': to_guid(num_string='1'),
