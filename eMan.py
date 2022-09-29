@@ -39,9 +39,9 @@ def create_select_base(connection):
     return connection[DB_NAME]
 
 
-def new_doc_insert(connection, collection: str, document: dict):
+def new_doc_insert_one(connection, collection: str, document: dict):
 
-    """ Insert new document to data collection """
+    """ Insert new document to data collection / Mongo insertOne() """
 
     db = connection[DB_NAME]
     col = db[collection]
@@ -49,16 +49,37 @@ def new_doc_insert(connection, collection: str, document: dict):
     col.insert_one(doc)
 
 
-def find_sort_docs(connection, collection: str, search_request: str):
+def new_doc_insert_many(connection, collection: str, document: dict):
 
-    """ Find all docs in selected collection that is fits by search request """
+    """ Insert new documents to data collection / Mongo insertMany() """
 
     pass
 
 
+def find_all_docs_in_col(connection, collection: str):
+
+    """ Find all docs in selected collection / Mongo find() """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+
+    find_result = col.find()
+
+    return find_result
+
+
+def drop_all_docs_in_col(connection, collection: str):
+
+    """ Delete all documents from selected collection / Mongo drop() """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+    col.drop()
+
+
 def to_guid(num_string: str):
 
-    """ Convert any string number to guid string """
+    """ Convert any number string to guid string """
 
     add_zero = ''
     guid_prefix = '{00000000-0000-0000-0000-'
@@ -92,10 +113,13 @@ SAMPLE_DOC_DISH_ITEM = {
 
 client = connect_to_server()
 
-create_select_base(connection=client)
+# create_select_base(connection=client)
 
-new_doc_insert(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_DISH_ITEM)
+new_doc_insert_one(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_DISH_ITEM)
 
+# drop_all_docs_in_col(connection=client, collection=ITEMS_COL)
+
+print(find_all_docs_in_col(connection=client, collection=ITEMS_COL))
 
 
 
