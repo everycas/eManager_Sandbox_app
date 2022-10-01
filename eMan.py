@@ -33,16 +33,16 @@ def connect_to_server():
     return pymongo.MongoClient(ini_mongo_connection_string)
 
 
-def create_select_base(connection):
+def create_or_select_base(connection: object):
 
     """ Create / select eMan base """
 
     return connection[DB_NAME]
 
 
-def new_doc_insert_one(connection, collection: str, document: dict):
+def insert_one_doc_to_col(connection: object, collection: str, document: dict):
 
-    """ Insert new document to data collection / Mongo insertOne() """
+    """ Insert new document to data collection / Mongo insert_one({}) """
 
     db = connection[DB_NAME]
     col = db[collection]
@@ -50,14 +50,16 @@ def new_doc_insert_one(connection, collection: str, document: dict):
     col.insert_one(doc)
 
 
-def new_doc_insert_many(connection, collection: str, document: dict):
+def insert_many_docs_to_col(connection: object, collection: str, docs_list: list):
 
-    """ Insert new documents to data collection / Mongo insertMany() """
+    """ Insert new documents to data collection / Mongo insert_many([{}, ... {}]) """
 
-    pass
+    db = connection[DB_NAME]
+    col = db[collection]
+    col.insert_many(docs_list)
 
 
-def find_all_docs_in_col(connection, collection: str):
+def find_all_docs_in_col(connection: object, collection: str):
 
     """ Find all docs in selected collection / Mongo find() """
 
@@ -69,7 +71,16 @@ def find_all_docs_in_col(connection, collection: str):
     return find_result
 
 
-def drop_all_docs_in_col(connection, collection: str):
+def del_one_doc_from_col(connection: object, collection: str, d_key: str, d_value: 'str'):
+
+    """ Delete one document in collection / Mongo delete_one({d_key: d_value}) """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+    col.delete_one({d_key: d_value})
+
+
+def del_all_docs_from_col(connection: object, collection: str):
 
     """ Delete all documents from selected collection / Mongo drop() """
 
@@ -78,16 +89,34 @@ def drop_all_docs_in_col(connection, collection: str):
     col.drop()
 
 
-def del_selected_docs_in_col(connection: object, collection: str, f_key: str, f_value: str):
+def del_many_docs_from_col(connection: object, collection: str, d_key: str, d_value: str):
 
-    """ Delete all docs in collection filtered by search request / Mongo deleteMany() """
+    """ Delete all docs in collection filtered by search request / Mongo deleteMany({d_key: d_value}) """
 
     db = connection[DB_NAME]
     col = db[collection]
-    col.delete_many({f_key: f_value})
+    col.delete_many({d_key: d_value})
 
 
-def to_guid(num_string: str):
+def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_value: str, update: dict):
+
+    """ Update one document in collection / Mongo update_one({d_key: d_value}, {'$set': {update}}) """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+    col.update_one({d_key: d_value}, {'$set': update})
+
+
+def update_many_docs_in_col(connection: object, collection: str, d_key: str, d_value: str, update: dict):
+
+    """ Update many documents in collection / Mongo update_many({d_key: d_value}, {'$set': {update}}) """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+    col.update_one({d_key: d_value}, {'$set': update})
+
+
+def num_string_to_guid(num_string: str):
 
     """ Convert any number string to guid string """
 
@@ -113,8 +142,8 @@ def to_guid(num_string: str):
 
 # TESTS ------------------------------------------------- #
 
-SAMPLE_DOC_DISH_ITEM = {
-    'guid': to_guid(num_string='1'),
+SAMPLE_DOC_ITEM_TO_INSERT = {
+    'guid': num_string_to_guid(num_string='1'),
     'type': 'Dish',
     'group': 'Meat',
     'name': 'Beefsteak',
@@ -123,15 +152,45 @@ SAMPLE_DOC_DISH_ITEM = {
     'price': 120.45
     }
 
+SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
+    {
+        'type': 'Dish',
+        'group': 'Meat',
+        'name': 'Meat Fries',
+        'munit': 'Portion',
+        'qnt': 1.0,
+        'price': 245.90
+    },
+    {
+        'type': 'Dish',
+        'group': 'Chicken',
+        'name': 'Chicken Fries',
+        'munit': 'Portion',
+        'qnt': 1.0,
+        'price': 223.99
+    }
+]
+
+SAMPLE_DOC_ITEM_GUID_UPDATE = {
+    'guid': num_string_to_guid(num_string='1234')
+}
+
 client = connect_to_server()
 
 # create_select_base(connection=client)
 
-new_doc_insert_one(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_DISH_ITEM)
+# insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_DISH_ITEM)
 
-# drop_all_docs_in_col(connection=client, collection=ITEMS_COL)
+# insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_ITEMS_LIST_TO_INSERT)
 
-del_selected_docs_in_col(connection=client, collection=ITEMS_COL, f_key='type', f_value='Dish')
+# del_one_doc_from_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Chicken Fries')
 
+# del_all_docs_from_col(connection=client, collection=ITEMS_COL)
+
+# del_docs_from_col_by_filter(connection=client, collection=ITEMS_COL, f_key='group', f_value='Meat')
+
+# update_one_doc_in_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Meat Fries', update=SAMPLE_DOC_ITEM_GUID_UPDATE)
+
+update_many_docs_in_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Meat Fries', update=SAMPLE_DOC_ITEM_GUID_UPDATE)
 
 
