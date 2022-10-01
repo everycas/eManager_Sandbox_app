@@ -78,6 +78,15 @@ def drop_all_docs_in_col(connection, collection: str):
     col.drop()
 
 
+def del_selected_docs_in_col(connection: object, collection: str, f_key: str, f_value: str):
+
+    """ Delete all docs in collection filtered by search request / Mongo deleteMany() """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+    col.delete_many({f_key: f_value})
+
+
 def to_guid(num_string: str):
 
     """ Convert any number string to guid string """
@@ -122,7 +131,7 @@ new_doc_insert_one(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_
 
 # drop_all_docs_in_col(connection=client, collection=ITEMS_COL)
 
-print(find_all_docs_in_col(connection=client, collection=ITEMS_COL))
+del_selected_docs_in_col(connection=client, collection=ITEMS_COL, f_key='type', f_value='Dish')
 
 
 
