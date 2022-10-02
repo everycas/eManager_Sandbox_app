@@ -59,6 +59,16 @@ def insert_many_docs_to_col(connection: object, collection: str, docs_list: list
     col.insert_many(docs_list)
 
 
+def find_docs_in_col(connection: object, collection: str, d_key: str, d_value: str):
+
+    """ Find documents in collection by search request / Mongo find({d_key: d_value})  """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+
+    return [doc for doc in col.find({d_key: d_value})]
+
+
 def find_all_docs_in_col(connection: object, collection: str):
 
     """ Find all docs in selected collection / Mongo find() """
@@ -66,9 +76,7 @@ def find_all_docs_in_col(connection: object, collection: str):
     db = connection[DB_NAME]
     col = db[collection]
 
-    find_result = col.find()
-
-    return find_result
+    return [doc for doc in col.find()]
 
 
 def del_one_doc_from_col(connection: object, collection: str, d_key: str, d_value: 'str'):
@@ -80,15 +88,6 @@ def del_one_doc_from_col(connection: object, collection: str, d_key: str, d_valu
     col.delete_one({d_key: d_value})
 
 
-def del_all_docs_from_col(connection: object, collection: str):
-
-    """ Delete all documents from selected collection / Mongo drop() """
-
-    db = connection[DB_NAME]
-    col = db[collection]
-    col.drop()
-
-
 def del_many_docs_from_col(connection: object, collection: str, d_key: str, d_value: str):
 
     """ Delete all docs in collection filtered by search request / Mongo deleteMany({d_key: d_value}) """
@@ -98,18 +97,18 @@ def del_many_docs_from_col(connection: object, collection: str, d_key: str, d_va
     col.delete_many({d_key: d_value})
 
 
-def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_value: str, update: dict):
+def del_all_docs_from_col(connection: object, collection: str):
 
-    """ Update one document in collection / Mongo update_one({d_key: d_value}, {'$set': {update}}) """
+    """ Delete all documents from selected collection / Mongo drop() """
 
     db = connection[DB_NAME]
     col = db[collection]
-    col.update_one({d_key: d_value}, {'$set': update})
+    col.drop()
 
 
-def update_many_docs_in_col(connection: object, collection: str, d_key: str, d_value: str, update: dict):
+def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_value: str, update: dict):
 
-    """ Update many documents in collection / Mongo update_many({d_key: d_value}, {'$set': {update}}) """
+    """ Update one document in collection / Mongo update_one({d_key: d_value}, {'$set': {update}}) """
 
     db = connection[DB_NAME]
     col = db[collection]
@@ -171,8 +170,8 @@ SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
     }
 ]
 
-SAMPLE_DOC_ITEM_GUID_UPDATE = {
-    'guid': num_string_to_guid(num_string='1234')
+SAMPLE_DOC_UPDATE = {
+    'guid': num_string_to_guid(num_string='1235')
 }
 
 client = connect_to_server()
@@ -189,8 +188,8 @@ client = connect_to_server()
 
 # del_docs_from_col_by_filter(connection=client, collection=ITEMS_COL, f_key='group', f_value='Meat')
 
-# update_one_doc_in_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Meat Fries', update=SAMPLE_DOC_ITEM_GUID_UPDATE)
+# update_one_doc_in_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Meat Fries', update=SAMPLE_DOC_UPDATE)
 
-update_many_docs_in_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Meat Fries', update=SAMPLE_DOC_ITEM_GUID_UPDATE)
+# print(find_all_docs_in_col(connection=client, collection=ITEMS_COL))
 
-
+# print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='group', d_value='Meat'))
