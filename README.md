@@ -1,8 +1,8 @@
 # eManager_sandbox
 
 1. This 'eManager' python project uses a MongoDB Server;
-2. eManager - it is some sort of Manager software application for working with documents in Mongo base collections.
-3. In the future, it is planing to integrate with UCS StoreHouse v5 (warehouse software).
-4. Also, planning internet payment functionality.
+2. eManager - it's some sort of Manager software application for working with dicts and doc's in Mongo base collections.
+3. Planning ordering and internet payment functionality;
+4. Planning reporting and warehousing functionality;
 
 See more information in eMan_logic.txt
