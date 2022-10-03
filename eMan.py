@@ -115,6 +115,19 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
     col.update_one({d_key: d_value}, {'$set': update})
 
 
+def uniq_num_generator(connection: object, collection: str):
+
+    """ Documents id generator """
+
+    db = connection[DB_NAME]
+    col = db[collection]
+
+    id = []
+    for doc in col.find():
+        id.append(str(doc['_id']))
+    print(id)
+
+
 def num_string_to_guid(num_string: str):
 
     """ Convert any number string to guid string """
@@ -153,6 +166,7 @@ SAMPLE_DOC_ITEM_TO_INSERT = {
 
 SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
     {
+        '_id': 0,
         'type': 'Dish',
         'group': 'Meat',
         'name': 'Meat Fries',
@@ -161,6 +175,7 @@ SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
         'price': 245.90
     },
     {
+        '_id': 1,
         'type': 'Dish',
         'group': 'Chicken',
         'name': 'Chicken Fries',
@@ -180,7 +195,7 @@ client = connect_to_server()
 
 # insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_DISH_ITEM)
 
-# insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_ITEMS_LIST_TO_INSERT)
+insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_ITEMS_LIST_TO_INSERT)
 
 # del_one_doc_from_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Chicken Fries')
 
@@ -193,3 +208,5 @@ client = connect_to_server()
 # print(find_all_docs_in_col(connection=client, collection=ITEMS_COL))
 
 # print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='group', d_value='Meat'))
+
+uniq_num_generator(connection=client, collection=ITEMS_COL)
