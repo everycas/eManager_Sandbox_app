@@ -21,16 +21,18 @@ INI.log_name = LOG_NAME
 
 def connect_to_server():
 
-    """ Make client connection to MongoDB Sever """
+    """ Make client connection to MongoDB Sever / MongoClient('connection string') """
 
-    # params
+    # connection string params
     ini_server_name = INI.get(section='server', param='name')
     ini_server_ip = INI.get(section='server', param='ip')
     ini_server_port = INI.get(section='server', param='port')
 
     # connection string
     ini_mongo_connection_string = f"{ini_server_name}://{ini_server_ip}:{ini_server_port}/"
-    return pymongo.MongoClient(ini_mongo_connection_string)
+
+    connection = pymongo.MongoClient(ini_mongo_connection_string)
+    return connection
 
 
 def create_or_select_base(connection: object):
@@ -115,17 +117,20 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
     col.update_one({d_key: d_value}, {'$set': update})
 
 
-def uniq_num_generator(connection: object, collection: str):
+def uid_generator(connection: object, collection: str):
 
     """ Documents id generator """
 
     db = connection[DB_NAME]
     col = db[collection]
 
-    id = []
+    num = []
     for doc in col.find():
-        id.append(str(doc['_id']))
-    print(id)
+        num.append(doc['_id'])
+    if num:
+        return max(num) + 1
+    else:
+        return 1
 
 
 def num_string_to_guid(num_string: str):
@@ -154,19 +159,21 @@ def num_string_to_guid(num_string: str):
 
 # TESTS ------------------------------------------------- #
 
+client = connect_to_server()
+
 SAMPLE_DOC_ITEM_TO_INSERT = {
-    'guid': num_string_to_guid(num_string='1'),
-    'type': 'Dish',
-    'group': 'Meat',
-    'name': 'Beefsteak',
-    'munit': 'Portion',
-    'qnt': 1.0,
-    'price': 120.45
+        '_id': uid_generator(connection=client, collection=ITEMS_COL),
+        'type': 'Dish',
+        'group': 'Meat',
+        'name': 'Meat & Chicken Mix',
+        'munit': 'Portion',
+        'qnt': 1.0,
+        'price': 245.90
     }
 
 SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
     {
-        '_id': 0,
+        '_id': 1,
         'type': 'Dish',
         'group': 'Meat',
         'name': 'Meat Fries',
@@ -175,7 +182,7 @@ SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
         'price': 245.90
     },
     {
-        '_id': 1,
+        '_id': 2,
         'type': 'Dish',
         'group': 'Chicken',
         'name': 'Chicken Fries',
@@ -189,13 +196,12 @@ SAMPLE_DOC_UPDATE = {
     'guid': num_string_to_guid(num_string='1235')
 }
 
-client = connect_to_server()
 
 # create_select_base(connection=client)
 
-# insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_DISH_ITEM)
+insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_ITEM_TO_INSERT)
 
-insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_ITEMS_LIST_TO_INSERT)
+# insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_ITEMS_LIST_TO_INSERT)
 
 # del_one_doc_from_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Chicken Fries')
 
@@ -209,4 +215,4 @@ insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPL
 
 # print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='group', d_value='Meat'))
 
-uniq_num_generator(connection=client, collection=ITEMS_COL)
+# uid_generator(connection=client, collection=ITEMS_COL)
