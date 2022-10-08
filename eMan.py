@@ -1,10 +1,12 @@
 from ini_res import Ini
 import datetime as dt
+import uuid
 import pymongo
 
 INI_NAME = 'eMan.ini'
 LOG_NAME = 'eMan.log'
 DT_NOW = dt.datetime.now()
+DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 16]  # 'yyyymmddhhmmssms'
 
 DB_NAME = 'USER-10000001-DB'  # every new user (owner / admin) will get own new base
 SETS_COL = 'settings'
@@ -123,7 +125,6 @@ def uid_generator(connection: object, collection: str):
 
     db = connection[DB_NAME]
     col = db[collection]
-
     ids = [doc['_id'] for doc in col.find()]
 
     if ids:
@@ -132,26 +133,30 @@ def uid_generator(connection: object, collection: str):
         return 1
 
 
-def num_string_to_guid(num_string: str):
+def guid_generator(num_string: str):
 
-    """ Convert any number string to guid string """
+    """ Convert any number string to guid string / mask: '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
 
     add_zero = ''
-    guid_prefix = '{00000000-0000-0000-0000-'
+    guid_prefix = '{'
+    guid_yyyymmdd = f'{DT_STRING[:8]}-'
+    guid_hhmm = f'{DT_STRING[8:12]}-'
+    guid_ssms = f'{DT_STRING[12:16]}-'
+    guid_uuid = f'{str(uuid.getnode())[:4]}-'
     guid_postfix = '}'
 
-    if len(num_string) < 12:
-        diff = 12 - len(num_string)  # 6
+    if len(num_string) < 8:
+        diff = 8 - len(num_string)  # 6
         for _ in range(diff):
             add_zero += '0'
             code = add_zero + num_string
-    elif len(num_string) > 12:
-        diff = len(num_string) - 12
+    elif len(num_string) > 8:
+        diff = len(num_string) - 8
         code = num_string[diff:]
     else:
         code = num_string
 
-    result_guid = guid_prefix + code + guid_postfix
+    result_guid = guid_prefix + guid_yyyymmdd + guid_hhmm + guid_ssms + guid_uuid + code + guid_postfix
 
     return result_guid
 
@@ -162,8 +167,8 @@ client = connect_to_server()
 
 SAMPLE_DOC_TO_INSERT = {
         '_id': uid_generator(connection=client, collection=ITEMS_COL),
-        'guid': num_string_to_guid(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
-        'modified': DT_NOW,
+        'guid': guid_generator(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
+        'modified': DT_STRING,
         'active': True,
         'type': 'Dish',
         'group': 'Meat',
@@ -175,7 +180,7 @@ SAMPLE_DOC_TO_INSERT = {
 
 
 SAMPLE_DOC_UPDATE = {
-    'modified': DT_NOW,
+    'modified': DT_STRING,
     'name': 'Fried Chicken and Potatoes',
     'price': 176.90
 }
@@ -183,7 +188,7 @@ SAMPLE_DOC_UPDATE = {
 
 # create_select_base(connection=client)
 
-insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
+# insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
 
 #  #  insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_TO_INSERT)
 
@@ -200,3 +205,5 @@ insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_D
 # print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='_id', d_value=2))
 
 # uid_generator(connection=client, collection=ITEMS_COL)
+
+
