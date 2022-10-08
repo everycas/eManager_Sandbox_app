@@ -124,11 +124,10 @@ def uid_generator(connection: object, collection: str):
     db = connection[DB_NAME]
     col = db[collection]
 
-    num = []
-    for doc in col.find():
-        num.append(doc['_id'])
-    if num:
-        return max(num) + 1
+    ids = [doc['_id'] for doc in col.find()]
+
+    if ids:
+        return max(ids) + 1
     else:
         return 1
 
@@ -161,8 +160,11 @@ def num_string_to_guid(num_string: str):
 
 client = connect_to_server()
 
-SAMPLE_DOC_ITEM_TO_INSERT = {
+SAMPLE_DOC_TO_INSERT = {
         '_id': uid_generator(connection=client, collection=ITEMS_COL),
+        'guid': num_string_to_guid(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
+        'modified': DT_NOW,
+        'active': True,
         'type': 'Dish',
         'group': 'Meat',
         'name': 'Meat & Chicken Mix',
@@ -171,37 +173,19 @@ SAMPLE_DOC_ITEM_TO_INSERT = {
         'price': 245.90
     }
 
-SAMPLE_DOCS_ITEMS_LIST_TO_INSERT = [
-    {
-        '_id': 1,
-        'type': 'Dish',
-        'group': 'Meat',
-        'name': 'Meat Fries',
-        'munit': 'Portion',
-        'qnt': 1.0,
-        'price': 245.90
-    },
-    {
-        '_id': 2,
-        'type': 'Dish',
-        'group': 'Chicken',
-        'name': 'Chicken Fries',
-        'munit': 'Portion',
-        'qnt': 1.0,
-        'price': 223.99
-    }
-]
 
 SAMPLE_DOC_UPDATE = {
-    'guid': num_string_to_guid(num_string='1235')
+    'modified': DT_NOW,
+    'name': 'Fried Chicken and Potatoes',
+    'price': 176.90
 }
 
 
 # create_select_base(connection=client)
 
-insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_ITEM_TO_INSERT)
+insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
 
-# insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_ITEMS_LIST_TO_INSERT)
+#  #  insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_TO_INSERT)
 
 # del_one_doc_from_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Chicken Fries')
 
@@ -209,10 +193,10 @@ insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_D
 
 # del_docs_from_col_by_filter(connection=client, collection=ITEMS_COL, f_key='group', f_value='Meat')
 
-# update_one_doc_in_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Meat Fries', update=SAMPLE_DOC_UPDATE)
+# update_one_doc_in_col(connection=client, collection=ITEMS_COL, d_key='_id', d_value=1, update=SAMPLE_DOC_UPDATE)
 
 # print(find_all_docs_in_col(connection=client, collection=ITEMS_COL))
 
-# print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='group', d_value='Meat'))
+# print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='_id', d_value=2))
 
 # uid_generator(connection=client, collection=ITEMS_COL)
