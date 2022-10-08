@@ -6,7 +6,7 @@ import pymongo
 INI_NAME = 'eMan.ini'
 LOG_NAME = 'eMan.log'
 DT_NOW = dt.datetime.now()
-DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 16]  # 'yyyymmddhhmmssms'
+DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
 
 DB_NAME = 'USER-10000001-DB'  # every new user (owner / admin) will get own new base
 SETS_COL = 'settings'
@@ -119,6 +119,18 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
     col.update_one({d_key: d_value}, {'$set': update})
 
 
+def dbname_generator(connection: object):
+
+    """ Generate db name / mask: YYYYMMDD-HHMM-SSMS-USER-UUID """
+
+    dbname_yyyymmdd = f'{DT_STRING[:8]}-'
+    dbname_hhmmss = f'{DT_STRING[8:14]}-'
+    dbname_msmsms = f'{DT_STRING[14:20]}-'
+    dbname_uuid = f'{str(uuid.getnode())}'
+
+    return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'USERDB-' + dbname_uuid
+
+
 def uid_generator(connection: object, collection: str):
 
     """ Documents id generator """
@@ -205,5 +217,7 @@ SAMPLE_DOC_UPDATE = {
 # print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='_id', d_value=2))
 
 # uid_generator(connection=client, collection=ITEMS_COL)
+
+print(dbname_generator(connection=client))
 
 
