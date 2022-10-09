@@ -180,28 +180,20 @@ client = connect_to_server()
 SAMPLE_DOC_TO_INSERT = {
 
     '_id': uid_generator(connection=client, collection=ITEMS_COL),
-
-    'main': {
-        'guid': guid_generator(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
-        'collection': '',
-        'modified': DT_STRING,
-        'active': True
-    },
-
-    'filtering': {
-        'type': 'Dish',
-        'group': 'Meat',
-        'munit': 'Portion',
-        'tag': 'Hit!'
-    },
-
-    'item': {
-        'name': 'Meat & Chicken Mix',
-        'qnt': 1.0,
-        'price': 245.90,
-        'discount': -10,
-        'disc_price': 0
-    }
+    'guid': guid_generator(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
+    'collection': '',
+    'modified': DT_STRING,
+    'active': True,
+    'type': 'Dish',
+    'group': 'Meat',
+    'munit': 'Portion',
+    'tag': 'Hit!',
+    'name': 'Meat & Chicken Mix',
+    'qnt': 1.0,
+    'price': 245.90,
+    'tax': 0,
+    'discount': -10,
+    'disc_price': 0
 }
 
 SAMPLE_DOC_UPDATE = {'modified': DT_STRING}
