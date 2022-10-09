@@ -6,9 +6,9 @@ import pymongo
 INI_NAME = 'eMan.ini'
 LOG_NAME = 'eMan.log'
 DT_NOW = dt.datetime.now()
-DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
+DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssmsmsms'
 
-DB_NAME = 'USER-10000001-DB'  # every new user (owner / admin) will get own new base
+DB_NAME = '20221009-134331-055886-USERID-113466977757'
 SETS_COL = 'settings'
 ITEMS_COL = 'items'
 CORRS_COL = 'corrs'
@@ -35,6 +35,18 @@ def connect_to_server():
 
     connection = pymongo.MongoClient(ini_mongo_connection_string)
     return connection
+
+
+def dbname_generator(connection: object):
+
+    """ Generate db name / mask: 'YYYYMMDD(8)-HHMMSS(6)-MSMSMS(6)-USERDB(6)-UUID(12)' """
+
+    dbname_yyyymmdd = f'{DT_STRING[:8]}-'
+    dbname_hhmmss = f'{DT_STRING[8:14]}-'
+    dbname_msmsms = f'{DT_STRING[14:20]}-'
+    dbname_uuid = f'{str(uuid.getnode())}'
+
+    return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'USERDB-' + dbname_uuid
 
 
 def create_or_select_base(connection: object):
@@ -119,18 +131,6 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
     col.update_one({d_key: d_value}, {'$set': update})
 
 
-def dbname_generator(connection: object):
-
-    """ Generate db name / mask: YYYYMMDD-HHMM-SSMS-USER-UUID """
-
-    dbname_yyyymmdd = f'{DT_STRING[:8]}-'
-    dbname_hhmmss = f'{DT_STRING[8:14]}-'
-    dbname_msmsms = f'{DT_STRING[14:20]}-'
-    dbname_uuid = f'{str(uuid.getnode())}'
-
-    return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'USERDB-' + dbname_uuid
-
-
 def uid_generator(connection: object, collection: str):
 
     """ Documents id generator """
@@ -178,25 +178,33 @@ def guid_generator(num_string: str):
 client = connect_to_server()
 
 SAMPLE_DOC_TO_INSERT = {
-        '_id': uid_generator(connection=client, collection=ITEMS_COL),
+
+    '_id': uid_generator(connection=client, collection=ITEMS_COL),
+
+    'main': {
         'guid': guid_generator(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
+        'collection': '',
         'modified': DT_STRING,
-        'active': True,
+        'active': True
+    },
+
+    'filtering': {
         'type': 'Dish',
         'group': 'Meat',
-        'name': 'Meat & Chicken Mix',
         'munit': 'Portion',
+        'tag': 'Hit!'
+    },
+
+    'item': {
+        'name': 'Meat & Chicken Mix',
         'qnt': 1.0,
-        'price': 245.90
+        'price': 245.90,
+        'discount': -10,
+        'disc_price': 0
     }
-
-
-SAMPLE_DOC_UPDATE = {
-    'modified': DT_STRING,
-    'name': 'Fried Chicken and Potatoes',
-    'price': 176.90
 }
 
+SAMPLE_DOC_UPDATE = {'modified': DT_STRING}
 
 # create_select_base(connection=client)
 
@@ -218,6 +226,6 @@ SAMPLE_DOC_UPDATE = {
 
 # uid_generator(connection=client, collection=ITEMS_COL)
 
-print(dbname_generator(connection=client))
+# print(dbname_generator(connection=client))
 
 
