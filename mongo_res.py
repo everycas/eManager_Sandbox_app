@@ -3,66 +3,69 @@ import datetime as dt
 import pymongo
 import uuid
 
-# Global
-INI_NAME = 'eMan.ini'
-LOG_NAME = 'eMan.log'
-DT_NOW = dt.datetime.now()
-DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssmsmsms(20)'
 
-# Objects
-INI = Ini()
+class Mongo:
 
-# GUID SAMPLE: {20221010-1437-0632-1134-000000000012}
+    """ Main working functionality eMan with MongoDB """
 
+    def __init__(self):
 
-def generate_dbname():
+        self.ini = Ini()
+        self.ini.log_name = 'eMan.log'
+        self.ini.ini_name = 'eMan.ini'
+        self.dts = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[:20]  # yyyymmddhhmmssmsmsms
 
-    """ Generate db name GUID / mask: 'YYYYMMDD-HHMM-SSMS-eMan-UUID1[-12:]' """
+    @staticmethod
+    def guid_gen():
 
-    return f'{DT_STRING[:8]}-{DT_STRING[8:12]}-{DT_STRING[12:16]}-eMan-{str(uuid.uuid1())[-12:]}'
+        """ GUID generation / using uuid.uuid5() """
 
+        code = str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))
+        return '{' + code + '}'
 
-def generate_id(connection: object, dbname: str, collection: str):
+    def dbname_gen(self):
 
-    """ Documents id generator """
+        """ Generate db name GUID / mask: 'YYYYMMDD-HHMM-SSMS-eMan-UUID5[-12:]' """
 
-    db = connection[dbname]
-    col = db[collection]
-    ids = [doc['_id'] for doc in col.find()]
+        code = f'{self.dts[:8]}-{self.dts[8:12]}-{self.dts[12:16]}-eMan-{str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))[-12:]}'
+        return '{' + code + '}'
 
-    if ids:
-        return max(ids) + 1
-    else:
-        return 1
+    def num_to_guid(self, num_string: str, is_numeric: bool):
 
+        """ Convert any number string to guid string / if is_numeric False = mask: '{UUID5[:-13]-CODE(12)}' """
 
-def guid_generator(num_string: str):
+        # if not is_numeric
+        uuid5 = f'{str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))[:-13]}-'
+        # if is_numeric
+        dt_code = f'{self.dts[:8]}-{self.dts[8:12]}-{self.dts[12:16]}-{self.dts[16:20]}-'
 
-    """ Convert any number string to guid string / mask: '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
+        add_zero = ''
+        if len(num_string) < 12:
+            diff = 12 - len(num_string)
+            for _ in range(diff):
+                add_zero += '0'
+                code = add_zero + num_string
+        elif len(num_string) > 12:
+            diff = len(num_string) - 12
+            code = num_string[diff:]
+        else:
+            code = num_string
 
-    add_zero = ''
-    guid_prefix = '{'
-    guid_yyyymmdd = f'{DT_STRING[:8]}-'
-    guid_hhmm = f'{DT_STRING[8:12]}-'
-    guid_ssms = f'{DT_STRING[12:16]}-'
-    guid_uuid = f'{str(uuid.getnode())[:4]}-'
-    guid_postfix = '}'
+        if is_numeric:
+            return '{' + dt_code + code + '}'
+        else:
+            return '{' + uuid5 + code + '}'
 
-    if len(num_string) < 12:
-        diff = 12 - len(num_string)  # 6
-        for _ in range(diff):
-            add_zero += '0'
-            code = add_zero + num_string
-    elif len(num_string) > 12:
-        diff = len(num_string) - 12
-        code = num_string[diff:]
-    else:
-        code = num_string
+    @staticmethod
+    def doc_id_gen(connection: object, dbname: str, collection: str):
 
-    result_guid = guid_prefix + guid_yyyymmdd + guid_hhmm + guid_ssms + guid_uuid + code + guid_postfix
+        """ Mongo documents id generator """
 
-    return result_guid
-
-
-print(generate_dbname())
+        db = connection[dbname]
+        col = db[collection]
+        ids = [doc['_id'] for doc in col.find()]
+        if ids:
+            return max(ids) + 1
+        else:
+            return 1
 

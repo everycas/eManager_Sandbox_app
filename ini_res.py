@@ -20,7 +20,6 @@ class Ini:
             section: ini section name, param: ini parameter name. """
 
         try:
-
             self.ini.read(self.ini_name)
             data = self.ini[section][param]
 
