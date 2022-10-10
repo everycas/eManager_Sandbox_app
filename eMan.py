@@ -33,11 +33,10 @@ def connect_to_server():
     # connection string
     ini_mongo_connection_string = f"{ini_server_name}://{ini_server_ip}:{ini_server_port}/"
 
-    connection = pymongo.MongoClient(ini_mongo_connection_string)
-    return connection
+    return pymongo.MongoClient(ini_mongo_connection_string)
 
 
-def dbname_generator(connection: object):
+def dbname_generator():
 
     """ Generate db name / mask: 'YYYYMMDD(8)-HHMMSS(6)-MSMSMS(6)-USERDB(6)-UUID(12)' """
 
@@ -219,5 +218,7 @@ SAMPLE_DOC_UPDATE = {'modified': DT_STRING}
 # uid_generator(connection=client, collection=ITEMS_COL)
 
 # print(dbname_generator(connection=client))
+
+print(DT_STRING)
 
 
