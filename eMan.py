@@ -1,4 +1,5 @@
 from ini_res import Ini
+from mongoman_res import Mongoman
 import datetime as dt
 import uuid
 import pymongo
@@ -19,6 +20,11 @@ BILLS_COL = 'bills'
 INI = Ini()
 INI.ini_name = INI_NAME
 INI.log_name = LOG_NAME
+
+MONGO = Mongoman()
+
+client = MONGO.server_connect()
+MONGO.create_new_base(connection=client)
 
 
 def connect_to_server():
@@ -219,6 +225,5 @@ SAMPLE_DOC_UPDATE = {'modified': DT_STRING}
 
 # print(dbname_generator(connection=client))
 
-print(DT_STRING)
 
 

@@ -4,7 +4,7 @@ import pymongo
 import uuid
 
 
-class Mongo:
+class Mongoman:
 
     """ Main working functionality eMan with MongoDB """
 
@@ -13,7 +13,10 @@ class Mongo:
         self.ini = Ini()
         self.ini.log_name = 'eMan.log'
         self.ini.ini_name = 'eMan.ini'
+
         self.dts = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[:20]  # yyyymmddhhmmssmsmsms
+
+    # Service actions ---------------------------------------------------------
 
     @staticmethod
     def guid_gen():
@@ -21,13 +24,6 @@ class Mongo:
         """ GUID generation / using uuid.uuid5() """
 
         code = str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))
-        return '{' + code + '}'
-
-    def dbname_gen(self):
-
-        """ Generate db name GUID / mask: 'YYYYMMDD-HHMM-SSMS-eMan-UUID5[-12:]' """
-
-        code = f'{self.dts[:8]}-{self.dts[8:12]}-{self.dts[12:16]}-eMan-{str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))[-12:]}'
         return '{' + code + '}'
 
     def num_to_guid(self, num_string: str, is_numeric: bool):
@@ -68,4 +64,33 @@ class Mongo:
             return max(ids) + 1
         else:
             return 1
+
+    # MongoDB actions ---------------------------------------------------------
+
+    def server_connect(self):
+
+        """ Make client connection to MongoDB Sever / MongoClient('connection string') """
+
+        # connection string params
+        ini_server_name = self.ini.get(section='server', param='name')
+        ini_server_ip = self.ini.get(section='server', param='ip')
+        ini_server_port = self.ini.get(section='server', param='port')
+
+        # connection string
+        ini_mongo_connection_string = f"{ini_server_name}://{ini_server_ip}:{ini_server_port}/"
+
+        return pymongo.MongoClient(ini_mongo_connection_string)
+
+    def create_new_base(self, connection: object):
+
+        """ Create / select eMan base """
+
+        def dbname_gen():
+            """ Generate db name GUID / mask: 'YYYYMMDD-HHMM-SSMS-eMan-UUID5[-12:]' """
+
+            code = f'{self.dts[:8]}-{self.dts[8:12]}-{self.dts[12:16]}-eMan-{str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))[-12:]}'
+            return '{' + code + '}'
+
+        dbname = dbname_gen()
+        return connection[dbname]
 
