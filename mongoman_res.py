@@ -19,14 +19,14 @@ class Mongoman:
     # Service actions ---------------------------------------------------------
 
     @staticmethod
-    def guid_gen():
+    def gen_guid():
 
         """ GUID generation / using uuid.uuid5() """
 
         code = str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))
         return '{' + code + '}'
 
-    def num_to_guid(self, num_string: str, is_numeric: bool):
+    def to_guid(self, num_string: str, is_numeric: bool):
 
         """ Convert any number string to guid string / if is_numeric False = mask: '{UUID5[:-13]-CODE(12)}' """
 
@@ -53,7 +53,7 @@ class Mongoman:
             return '{' + uuid5 + code + '}'
 
     @staticmethod
-    def doc_id_gen(connection: object, dbname: str, collection: str):
+    def gen_id(connection: object, dbname: str, collection: str):
 
         """ Mongo documents id generator """
 
@@ -67,7 +67,7 @@ class Mongoman:
 
     # MongoDB actions ---------------------------------------------------------
 
-    def server_connect(self):
+    def connect_server(self):
 
         """ Make client connection to MongoDB Sever / MongoClient('connection string') """
 
@@ -81,16 +81,25 @@ class Mongoman:
 
         return pymongo.MongoClient(ini_mongo_connection_string)
 
-    def create_new_base(self, connection: object):
+    def gen_dbname(self):
 
-        """ Create / select eMan base """
+        """ Generate db name GUID / mask: 'YYYYMMDD-HHMM-SSMS-eMan-UUID5[-12:]' """
 
-        def dbname_gen():
-            """ Generate db name GUID / mask: 'YYYYMMDD-HHMM-SSMS-eMan-UUID5[-12:]' """
+        code = f'{self.dts[:8]}-{self.dts[8:12]}-{self.dts[12:16]}-eMan-{str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))[-12:]}'
+        return '{' + code + '}'
 
-            code = f'{self.dts[:8]}-{self.dts[8:12]}-{self.dts[12:16]}-eMan-{str(uuid.uuid5(uuid.NAMESPACE_DNS, "GUID"))[-12:]}'
-            return '{' + code + '}'
+    @staticmethod
+    def select_db(connection: object, dbname: str):
 
-        dbname = dbname_gen()
+        """ Create / Select new db """
+
         return connection[dbname]
 
+    @staticmethod
+    def select_col(self, dbname: str, colname: str ):
+
+        """ Create / Select db collection """
+
+        return dbname[colname]
+
+    

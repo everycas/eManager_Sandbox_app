@@ -23,8 +23,8 @@ INI.log_name = LOG_NAME
 
 MONGO = Mongoman()
 
-client = MONGO.server_connect()
-MONGO.create_new_base(connection=client)
+client = MONGO.connect_server()
+MONGO.new_db(connection=client)
 
 
 def connect_to_server():
