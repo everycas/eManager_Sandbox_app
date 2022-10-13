@@ -96,10 +96,10 @@ class Mongoman:
         return connection[dbname]
 
     @staticmethod
-    def select_col(self, dbname: str, colname: str ):
+    def select_col(dbname: str, colname: str):
 
         """ Create / Select db collection """
 
         return dbname[colname]
 
-    
+
