@@ -200,7 +200,7 @@ SAMPLE_DOC_UPDATE = {
 
 # create_select_base(connection=client)
 
-# insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
+insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
 
 #  #  insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_TO_INSERT)
 
