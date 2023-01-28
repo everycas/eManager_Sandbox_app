@@ -124,16 +124,24 @@ def create_base(connection: object):
     except Exception as Argument:
         with open(LOG_NAME, "a") as log_file:
             log_file.write(f"\n{DT_NOW}: mongo server db creation error. Message:{str(Argument)}")
-
     else:
         pass
 
-
 def select_base():
+
     """ Get eMan base from ini """
 
-    # get dbname from ini
-    ini_dbname = INI.get(section='base', param='name')
+    server = connect_to_server()
+
+    try:
+        if INI_DBNAME != '':
+            return INI.get(section='base', param='name')
+
+    except Exception as Argument:
+        with open(LOG_NAME, "a") as log_file:
+            log_file.write(f"\n{DT_NOW}: mongo server db selection error. Message:{str(Argument)}")
+    else:
+        pass
 
     # if dbname not in ini rise error in log
 
