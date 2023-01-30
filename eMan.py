@@ -31,7 +31,7 @@ REP_COL = 'reports'
 # GENERATORS -------------------------------------------------------------------------------->
 
 
-def generate_dbname(connection: object):
+def generate_dbname_string():
 
     """ Generate db name / mask: YYYYMMDD-HHMM-SSMS-USER-UUID """
 
@@ -57,7 +57,7 @@ def generate_doc_uid(connection: object, collection: str):
         return 1
 
 
-def generate_guid(num_string: str):
+def generate_guid_string(num_string: str):
 
     """ Convert any number string to guid string / mask: '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
 
@@ -91,7 +91,7 @@ def generate_guid(num_string: str):
 
 def connect_to_server():
 
-    """ Make client connection to MongoDB Server / MongoClient('connection string') """
+    """ Return client connection to MongoDB Server using ini[server]name,ip,port params """
 
     # connection string params
     ini_server_name = INI.get(section='server', param='name')
@@ -110,15 +110,15 @@ def connect_to_server():
             log_file.write(f"\n{DT_NOW}: mongo server connection error. Message:{str(Argument)}")
 
     else:
+        print("Server connection successful.")
         return connection
 
 
 def create_new_db(connection: object):
 
-    """ Create new eMan db if ini[base]name not specified """
+    """ Create and write new eMan dbname to ini[base]name param if ini[base]name not specified. """
 
-    server = connect_to_server()
-    new_dbname = generate_dbname(connection=server)
+    new_dbname = generate_dbname_string()
 
     if INI_DBNAME == '':
         INI.set(section='base', param='name', data=new_dbname)
@@ -126,21 +126,22 @@ def create_new_db(connection: object):
     else:
         new_db = connect_to_db(dbname=INI_DBNAME)
 
+    print(f"New db with name: {new_db} creation successful.")
     return new_db
 
 
-def connect_to_db(dbname:str):
+def connect_to_db(dbname: str):
 
-    """ Get eMan base from ini """
+    """ Get eMan base from ini[base]name section. """
 
     dbname = INI_DBNAME
-    try:
-        if dbname != '':
-            return INI.get(section='base', param='name')
 
-    except Exception as Argument:
+    if dbname != '':
+        return dbname
+    else:
         with open(LOG_NAME, "a") as log_file:
-            log_file.write(f"\n{DT_NOW}: mongo server db selection error. Message:{str(Argument)}")
+            log_file.write(f"\n{DT_NOW}: no or incorrect db specified in ini[base]name section. "
+                           f"Create new or set proper db name.")
 
 
 # DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) ------------------------------------------------->
@@ -223,32 +224,34 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
 
 # TESTING ------------------------------------------------------------------------------------>
 
-client = connect_to_server()
-
-SAMPLE_DOC_TO_INSERT = {
-        '_id': generate_doc_uid(connection=client, collection=ITEMS_COL),
-        'guid': generate_guid(num_string=str(generate_doc_uid(connection=client, collection=ITEMS_COL))),
-        'modified': DT_STRING,
-        'active': True,
-        'type': 'Dish',
-        'group': 'Meat',
-        'name': 'Meat & Chicken Mix',
-        'munit': 'Portion',
-        'qnt': 1.0,
-        'price': 245.90
-    }
+server = connect_to_server()
+db = create_new_db(connection=server)
 
 
-SAMPLE_DOC_UPDATE = {
-    'modified': DT_STRING,
-    'name': 'Fried Chicken and Potatoes',
-    'price': 176.90
-}
+# SAMPLE_DOC_TO_INSERT = {
+#         '_id': generate_doc_uid(connection=client, collection=ITEMS_COL),
+#         'guid': generate_guid_string(num_string=str(generate_doc_uid(connection=client, collection=ITEMS_COL))),
+#         'modified': DT_STRING,
+#         'active': True,
+#         'type': 'Dish',
+#         'group': 'Meat',
+#         'name': 'Meat & Chicken Mix',
+#         'munit': 'Portion',
+#         'qnt': 1.0,
+#         'price': 245.90
+#     }
+
+
+# SAMPLE_DOC_UPDATE = {
+#     'modified': DT_STRING,
+#     'name': 'Fried Chicken and Potatoes',
+#     'price': 176.90
+# }
 
 
 # create_select_base(connection=client)
 
-insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
+# insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
 
 #  #  insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_TO_INSERT)
 
@@ -266,6 +269,5 @@ insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_D
 
 # uid_generator(connection=client, collection=ITEMS_COL)
 
-print(generate_dbname(connection=client))
 
 
