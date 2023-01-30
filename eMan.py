@@ -14,23 +14,24 @@ INI.log_name = LOG_NAME
 
 # db
 INI_DBNAME = INI.get(section='base', param='name')  # dbname from ini
-NEW_DBNAME = 'USER-10000001-DB'  # every new user (owner / admin) will get own new base
+DBNAME = INI_DBNAME
 
 DT_NOW = dt.datetime.now()
 DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
 
 # default db collections
-SETS_COL = 'settings'
+CFG_COL = 'settings'
 ITEMS_COL = 'items'
 CORRS_COL = 'corrs'
-ORDERS_COL = 'orders'
-BILLS_COL = 'bills'
+WORK_COL = 'orders'
+REP_COL = 'reports'
 
-# MONGO API -------------------->
-# GENERATORS ---------->
+# MONGO API --------------------------------------------------------------------------------->
+
+# GENERATORS -------------------------------------------------------------------------------->
 
 
-def dbname_generator(connection: object):
+def generate_dbname(connection: object):
 
     """ Generate db name / mask: YYYYMMDD-HHMM-SSMS-USER-UUID """
 
@@ -42,11 +43,11 @@ def dbname_generator(connection: object):
     return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'USERDB-' + dbname_uuid
 
 
-def uid_generator(connection: object, collection: str):
+def generate_doc_uid(connection: object, collection: str):
 
-    """ Documents id generator """
+    """ Documents universal id generator """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     ids = [doc['_id'] for doc in col.find()]
 
@@ -56,7 +57,7 @@ def uid_generator(connection: object, collection: str):
         return 1
 
 
-def guid_generator(num_string: str):
+def generate_guid(num_string: str):
 
     """ Convert any number string to guid string / mask: '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
 
@@ -68,6 +69,7 @@ def guid_generator(num_string: str):
     guid_uuid = f'{str(uuid.getnode())[:4]}-'
     guid_postfix = '}'
 
+    code = ''
     if len(num_string) < 8:
         diff = 8 - len(num_string)  # 6
         for _ in range(diff):
@@ -84,12 +86,12 @@ def guid_generator(num_string: str):
     return result_guid
 
 
-# MONGO SERVER & BASE -------------->
+# MONGO SERVER & DB ------------------------------------------------------------------------->
 
 
 def connect_to_server():
 
-    """ Make client connection to MongoDB Sever / MongoClient('connection string') """
+    """ Make client connection to MongoDB Server / MongoClient('connection string') """
 
     # connection string params
     ini_server_name = INI.get(section='server', param='name')
@@ -106,53 +108,49 @@ def connect_to_server():
     except Exception as Argument:
         with open(LOG_NAME, "a") as log_file:
             log_file.write(f"\n{DT_NOW}: mongo server connection error. Message:{str(Argument)}")
+
     else:
         return connection
 
 
-def create_base(connection: object):
+def create_new_db(connection: object):
 
     """ Create new eMan db if ini[base]name not specified """
 
     server = connect_to_server()
-    new_dbname = dbname_generator(connection=server)
+    new_dbname = generate_dbname(connection=server)
 
-    try:
-        if INI_DBNAME == '':
-            return connection[new_dbname]
-
-    except Exception as Argument:
-        with open(LOG_NAME, "a") as log_file:
-            log_file.write(f"\n{DT_NOW}: mongo server db creation error. Message:{str(Argument)}")
+    if INI_DBNAME == '':
+        INI.set(section='base', param='name', data=new_dbname)
+        new_db = connection[new_dbname]
     else:
-        pass
+        new_db = connect_to_db(dbname=INI_DBNAME)
 
-def select_base():
+    return new_db
+
+
+def connect_to_db(dbname:str):
 
     """ Get eMan base from ini """
 
-    server = connect_to_server()
-
+    dbname = INI_DBNAME
     try:
-        if INI_DBNAME != '':
+        if dbname != '':
             return INI.get(section='base', param='name')
 
     except Exception as Argument:
         with open(LOG_NAME, "a") as log_file:
             log_file.write(f"\n{DT_NOW}: mongo server db selection error. Message:{str(Argument)}")
-    else:
-        pass
-
-    # if dbname not in ini rise error in log
 
 
+# DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) ------------------------------------------------->
 
 
 def insert_one_doc_to_col(connection: object, collection: str, document: dict):
 
     """ Insert new document to data collection / Mongo insert_one({}) """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     doc = document
     col.insert_one(doc)
@@ -162,7 +160,7 @@ def insert_many_docs_to_col(connection: object, collection: str, docs_list: list
 
     """ Insert new documents to data collection / Mongo insert_many([{}, ... {}]) """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     col.insert_many(docs_list)
 
@@ -171,7 +169,7 @@ def find_docs_in_col(connection: object, collection: str, d_key: str, d_value: s
 
     """ Find documents in collection by search request / Mongo find({d_key: d_value})  """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
 
     return [doc for doc in col.find({d_key: d_value})]
@@ -181,7 +179,7 @@ def find_all_docs_in_col(connection: object, collection: str):
 
     """ Find all docs in selected collection / Mongo find() """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
 
     return [doc for doc in col.find()]
@@ -191,7 +189,7 @@ def del_one_doc_from_col(connection: object, collection: str, d_key: str, d_valu
 
     """ Delete one document in collection / Mongo delete_one({d_key: d_value}) """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     col.delete_one({d_key: d_value})
 
@@ -200,7 +198,7 @@ def del_many_docs_from_col(connection: object, collection: str, d_key: str, d_va
 
     """ Delete all docs in collection filtered by search request / Mongo deleteMany({d_key: d_value}) """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     col.delete_many({d_key: d_value})
 
@@ -209,7 +207,7 @@ def del_all_docs_from_col(connection: object, collection: str):
 
     """ Delete all documents from selected collection / Mongo drop() """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     col.drop()
 
@@ -218,18 +216,18 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
 
     """ Update one document in collection / Mongo update_one({d_key: d_value}, {'$set': {update}}) """
 
-    db = connection[NEW_DBNAME]
+    db = connection[INI_DBNAME]
     col = db[collection]
     col.update_one({d_key: d_value}, {'$set': update})
 
 
-# TESTS ------------------------------------------------- #
+# TESTING ------------------------------------------------------------------------------------>
 
 client = connect_to_server()
 
 SAMPLE_DOC_TO_INSERT = {
-        '_id': uid_generator(connection=client, collection=ITEMS_COL),
-        'guid': guid_generator(num_string=str(uid_generator(connection=client, collection=ITEMS_COL))),
+        '_id': generate_doc_uid(connection=client, collection=ITEMS_COL),
+        'guid': generate_guid(num_string=str(generate_doc_uid(connection=client, collection=ITEMS_COL))),
         'modified': DT_STRING,
         'active': True,
         'type': 'Dish',
@@ -268,6 +266,6 @@ insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_D
 
 # uid_generator(connection=client, collection=ITEMS_COL)
 
-print(dbname_generator(connection=client))
+print(generate_dbname(connection=client))
 
 
