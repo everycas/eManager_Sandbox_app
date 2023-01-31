@@ -14,7 +14,6 @@ INI.log_name = LOG_NAME
 
 # db
 INI_DBNAME = INI.get(section='base', param='name')  # dbname from ini
-DBNAME = INI_DBNAME
 
 DT_NOW = dt.datetime.now()
 DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
@@ -110,7 +109,7 @@ def connect_to_server():
             log_file.write(f"\n{DT_NOW}: mongo server connection error. Message:{str(Argument)}")
 
     else:
-        print("Server connection successful.")
+        print(f"Server connection using '{ini_mongo_connection_string}' string is successful.")
         return connection
 
 
@@ -126,7 +125,7 @@ def create_new_db(connection: object):
     else:
         new_db = connect_to_db(dbname=INI_DBNAME)
 
-    print(f"New db with name: {new_db} creation successful.")
+    print(f"New db with name: {new_db} created successful.")
     return new_db
 
 
@@ -134,10 +133,12 @@ def connect_to_db(dbname: str):
 
     """ Get eMan base from ini[base]name section. """
 
+    connection = connect_to_server()
     dbname = INI_DBNAME
 
     if dbname != '':
-        return dbname
+        print(f"DB connection with name '{dbname}' is successful.")
+        return connection[dbname]
     else:
         with open(LOG_NAME, "a") as log_file:
             log_file.write(f"\n{DT_NOW}: no or incorrect db specified in ini[base]name section. "
@@ -224,9 +225,9 @@ def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_val
 
 # TESTING ------------------------------------------------------------------------------------>
 
-server = connect_to_server()
-db = create_new_db(connection=server)
-
+# server = connect_to_server()
+# db = create_new_db(connection=server)
+db = connect_to_db(dbname=INI_DBNAME)
 
 # SAMPLE_DOC_TO_INSERT = {
 #         '_id': generate_doc_uid(connection=client, collection=ITEMS_COL),
