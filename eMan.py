@@ -17,6 +17,8 @@ INI_DBNAME = INI.get(section='base', param='name')  # dbname from ini
 
 DT_NOW = dt.datetime.now()
 DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
+DT_MODIFIED = f'{DT_STRING[:4]}.{DT_STRING[4:6]}.{DT_STRING[6:8]}-{DT_STRING[8:10]}:{DT_STRING[10:12]}:{DT_STRING[12:14]}'
+print(DT_MODIFIED)
 
 # default db collections
 CFG_COL = 'settings'
@@ -32,33 +34,20 @@ REP_COL = 'reports'
 
 def generate_dbname_string():
 
-    """ Generate db name / mask: YYYYMMDD-HHMM-SSMS-USER-UUID """
+    """ Generate db name / mask: YYYYMMDD(8)-HHMM(4)-SSMS(4)-BASE(4)-EMAN(4)UUID(8) """
 
     dbname_yyyymmdd = f'{DT_STRING[:8]}-'
-    dbname_hhmmss = f'{DT_STRING[8:14]}-'
-    dbname_msmsms = f'{DT_STRING[14:20]}-'
-    dbname_uuid = f'{str(uuid.getnode())}'
+    dbname_hhmmss = f'{DT_STRING[8:12]}-'
+    dbname_msmsms = f'{DT_STRING[12:16]}-'
+    dbname_uuid = f'EMAN{str(uuid.getnode())[4:12]}'
 
-    return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'USERDB-' + dbname_uuid
-
-
-def generate_doc_uid(connection: object, collection: str):
-
-    """ Documents universal id generator """
-
-    db = connection[INI_DBNAME]
-    col = db[collection]
-    ids = [doc['_id'] for doc in col.find()]
-
-    if ids:
-        return max(ids) + 1
-    else:
-        return 1
+    return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'BASE-' + dbname_uuid
 
 
 def generate_guid_string(num_string: str):
 
-    """ Convert any number string to guid string / mask: '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
+    """ Convert any string number to guid string with mask:
+     '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
 
     add_zero = ''
     guid_prefix = '{'
@@ -69,13 +58,13 @@ def generate_guid_string(num_string: str):
     guid_postfix = '}'
 
     code = ''
-    if len(num_string) < 8:
-        diff = 8 - len(num_string)  # 6
+    if len(num_string) < 12:
+        diff = 12 - len(num_string)  # 6
         for _ in range(diff):
             add_zero += '0'
             code = add_zero + num_string
-    elif len(num_string) > 8:
-        diff = len(num_string) - 8
+    elif len(num_string) > 12:
+        diff = len(num_string) - 12
         code = num_string[diff:]
     else:
         code = num_string
@@ -85,10 +74,23 @@ def generate_guid_string(num_string: str):
     return result_guid
 
 
+def generate_doc_uid_num(database: object, collection: str):
+
+    """ Document universal id generator """
+
+    col = database[collection]
+    ids = [doc['_id'] for doc in col.find()]
+
+    if ids:
+        return max(ids) + 1
+    else:
+        return 1
+
+
 # MONGO SERVER & DB ------------------------------------------------------------------------->
 
 
-def connect_to_server():
+def server():
 
     """ Return client connection to MongoDB Server using ini[server]name,ip,port params """
 
@@ -113,33 +115,22 @@ def connect_to_server():
         return connection
 
 
-def create_new_db(connection: object):
-
-    """ Create and write new eMan dbname to ini[base]name param if ini[base]name not specified. """
-
-    new_dbname = generate_dbname_string()
-
-    if INI_DBNAME == '':
-        INI.set(section='base', param='name', data=new_dbname)
-        new_db = connection[new_dbname]
-    else:
-        new_db = connect_to_db(dbname=INI_DBNAME)
-
-    print(f"New db with name: {new_db} created successful.")
-    return new_db
-
-
-def connect_to_db(dbname: str):
+def base(srv: object, dbname: str):
 
     """ Get eMan base from ini[base]name section. """
 
-    connection = connect_to_server()
-    dbname = INI_DBNAME
-
     if dbname != '':
+
         print(f"DB connection with name '{dbname}' is successful.")
-        return connection[dbname]
+
+        return srv[dbname]
+
     else:
+        new_dbname = generate_dbname_string()
+        INI.set(section='base', param='name', data=new_dbname)
+
+        print(f"DB connection with name '{dbname}' no or incorrect db specified in ini[base]name section.")
+
         with open(LOG_NAME, "a") as log_file:
             log_file.write(f"\n{DT_NOW}: no or incorrect db specified in ini[base]name section. "
                            f"Create new or set proper db name.")
@@ -148,99 +139,90 @@ def connect_to_db(dbname: str):
 # DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) ------------------------------------------------->
 
 
-def insert_one_doc_to_col(connection: object, collection: str, document: dict):
+def insert_one_doc_to_col(database: object, collection: str, document: dict):
 
     """ Insert new document to data collection / Mongo insert_one({}) """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
+    col = database[collection]
     doc = document
     col.insert_one(doc)
 
 
-def insert_many_docs_to_col(connection: object, collection: str, docs_list: list):
+def insert_many_docs_to_col(database: object, collection: str, docs_list: list):
 
     """ Insert new documents to data collection / Mongo insert_many([{}, ... {}]) """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
+    col = database[collection]
     col.insert_many(docs_list)
 
 
-def find_docs_in_col(connection: object, collection: str, d_key: str, d_value: str):
+def find_docs_in_col(database: object, collection: str, doc_key: str, doc_value: str):
 
     """ Find documents in collection by search request / Mongo find({d_key: d_value})  """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
-
-    return [doc for doc in col.find({d_key: d_value})]
+    col = database[collection]
+    return [doc for doc in col.find({doc_key: doc_value})]
 
 
-def find_all_docs_in_col(connection: object, collection: str):
+def find_all_docs_in_col(database: object, collection: str):
 
     """ Find all docs in selected collection / Mongo find() """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
-
+    col = database[collection]
     return [doc for doc in col.find()]
 
 
-def del_one_doc_from_col(connection: object, collection: str, d_key: str, d_value: 'str'):
+def del_one_doc_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
     """ Delete one document in collection / Mongo delete_one({d_key: d_value}) """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
-    col.delete_one({d_key: d_value})
+    col = database[collection]
+    col.delete_one({doc_key: doc_value})
 
 
-def del_many_docs_from_col(connection: object, collection: str, d_key: str, d_value: str):
+def del_many_docs_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
     """ Delete all docs in collection filtered by search request / Mongo deleteMany({d_key: d_value}) """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
-    col.delete_many({d_key: d_value})
+    col = database[collection]
+    col.delete_many({doc_key: doc_value})
 
 
-def del_all_docs_from_col(connection: object, collection: str):
+def del_all_docs_from_col(database: object, collection: str):
 
     """ Delete all documents from selected collection / Mongo drop() """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
+    col = database[collection]
     col.drop()
 
 
-def update_one_doc_in_col(connection: object, collection: str, d_key: str, d_value: str, update: dict):
+def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_value: str, update: dict):
 
     """ Update one document in collection / Mongo update_one({d_key: d_value}, {'$set': {update}}) """
 
-    db = connection[INI_DBNAME]
-    col = db[collection]
-    col.update_one({d_key: d_value}, {'$set': update})
+    col = database[collection]
+    col.update_one({doc_key: doc_value}, {'$set': update})
 
 
 # TESTING ------------------------------------------------------------------------------------>
 
-# server = connect_to_server()
-# db = create_new_db(connection=server)
-db = connect_to_db(dbname=INI_DBNAME)
+client = server()
 
-# SAMPLE_DOC_TO_INSERT = {
-#         '_id': generate_doc_uid(connection=client, collection=ITEMS_COL),
-#         'guid': generate_guid_string(num_string=str(generate_doc_uid(connection=client, collection=ITEMS_COL))),
-#         'modified': DT_STRING,
-#         'active': True,
-#         'type': 'Dish',
-#         'group': 'Meat',
-#         'name': 'Meat & Chicken Mix',
-#         'munit': 'Portion',
-#         'qnt': 1.0,
-#         'price': 245.90
-#     }
+db = base(srv=client, dbname=INI_DBNAME)
+
+SAMPLE_DOC_TO_INSERT = {
+        '_id': generate_doc_uid_num(database=db, collection=ITEMS_COL),
+        'modified': DT_MODIFIED,
+        'active': True,
+        'type': 'Dish',
+        'group': 'Meat',
+        'name': 'Meat & Chicken Mix',
+        'munit': 'Portion',
+        'qnt': 1.0,
+        'price': 245.90
+    }
+
+insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
 
 
 # SAMPLE_DOC_UPDATE = {
@@ -250,25 +232,7 @@ db = connect_to_db(dbname=INI_DBNAME)
 # }
 
 
-# create_select_base(connection=client)
 
-# insert_one_doc_to_col(connection=client, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
-
-#  #  insert_many_docs_to_col(connection=client, collection=ITEMS_COL, docs_list=SAMPLE_DOCS_TO_INSERT)
-
-# del_one_doc_from_col(connection=client, collection=ITEMS_COL, d_key='name', d_value='Chicken Fries')
-
-# del_all_docs_from_col(connection=client, collection=ITEMS_COL)
-
-# del_docs_from_col_by_filter(connection=client, collection=ITEMS_COL, f_key='group', f_value='Meat')
-
-# update_one_doc_in_col(connection=client, collection=ITEMS_COL, d_key='_id', d_value=1, update=SAMPLE_DOC_UPDATE)
-
-# print(find_all_docs_in_col(connection=client, collection=ITEMS_COL))
-
-# print(find_docs_in_col(connection=client, collection=ITEMS_COL, d_key='_id', d_value=2))
-
-# uid_generator(connection=client, collection=ITEMS_COL)
 
 
 
