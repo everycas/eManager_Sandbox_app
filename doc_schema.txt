@@ -1,0 +1,50 @@
+Rules:
+
+Required (default) keys for all doc's:
+    '_id': int -> read only
+    'created': str -> read only
+    'modified': str -> read only
+    'active': bool -> editable (True, False)
+    'name': str -> editable (not empty)
+    'comment': str -> editable (could be empty)
+
+Sample dictionary (dict) doc:
+
+collection: db.dicts.types, doc: new_doc = {
+    '_id': 1,
+    'created': '2023.02.05-15:54:38',
+    'modified': '2023.02.05-15:54:38',
+    'active': True,
+    'name': 'Dish',
+    'comment': 'this is dish'
+    }
+
+All docs in col should have the same number of keys
+
+
+1. Create new document (doc) in selected collection (col):
+
+If collection not empty:
+    -> Find doc with max number of keys;
+    -> Create new doc with the same keys as found;
+else:
+    -> Create new default doc with the default number of keys;
+
+2. Read all docs in col and insert to result list;
+
+3. Read (find) doc's by input value in a col:
+    -> Find all matching docs and insert to result list;
+
+4. Update doc values in selected doc from the search result list:
+    -> Update values if keys in selected doc;
+
+5. Update doc keys in all docs in col:
+    -> if new key not in col doc then update all docs in col
+
+
+
+
+
+
+
+

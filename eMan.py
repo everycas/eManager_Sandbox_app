@@ -74,7 +74,7 @@ def generate_guid_string(num_string: str):
     return result_guid
 
 
-def generate_doc_uid_num(database: object, collection: str):
+def generate_doc_id_num(database: object, collection: str):
 
     """ Document universal id generator """
 
@@ -90,7 +90,7 @@ def generate_doc_uid_num(database: object, collection: str):
 # MONGO SERVER & DB ------------------------------------------------------------------------->
 
 
-def server():
+def connect_server():
 
     """ Return client connection to MongoDB Server using ini[server]name,ip,port params """
 
@@ -115,7 +115,7 @@ def server():
         return connection
 
 
-def base(srv: object, dbname: str):
+def connect_base(server: object, dbname: str):
 
     """ Get eMan base from ini[base]name section. """
 
@@ -123,7 +123,7 @@ def base(srv: object, dbname: str):
 
         print(f"DB connection with name '{dbname}' is successful.")
 
-        return srv[dbname]
+        return server[dbname]
 
     else:
         new_dbname = generate_dbname_string()
@@ -164,7 +164,7 @@ def find_docs_in_col(database: object, collection: str, doc_key: str, doc_value:
     return [doc for doc in col.find({doc_key: doc_value})]
 
 
-def find_all_docs_in_col(database: object, collection: str):
+def read_all_docs_in_col(database: object, collection: str):
 
     """ Find all docs in selected collection / Mongo find() """
 
@@ -172,7 +172,7 @@ def find_all_docs_in_col(database: object, collection: str):
     return [doc for doc in col.find()]
 
 
-def del_one_doc_from_col(database: object, collection: str, doc_key: str, doc_value: str):
+def delete_one_doc_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
     """ Delete one document in collection / Mongo delete_one({d_key: d_value}) """
 
@@ -180,7 +180,7 @@ def del_one_doc_from_col(database: object, collection: str, doc_key: str, doc_va
     col.delete_one({doc_key: doc_value})
 
 
-def del_many_docs_from_col(database: object, collection: str, doc_key: str, doc_value: str):
+def delete_many_docs_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
     """ Delete all docs in collection filtered by search request / Mongo deleteMany({d_key: d_value}) """
 
@@ -188,7 +188,7 @@ def del_many_docs_from_col(database: object, collection: str, doc_key: str, doc_
     col.delete_many({doc_key: doc_value})
 
 
-def del_all_docs_from_col(database: object, collection: str):
+def delete_all_docs_from_col(database: object, collection: str):
 
     """ Delete all documents from selected collection / Mongo drop() """
 
@@ -204,25 +204,33 @@ def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_v
     col.update_one({doc_key: doc_value}, {'$set': update})
 
 
+# DOCUMENT CONSTRUCTOR --------------------------------------------------------------------------------------->
+
+def new_dict_doc():
+
+    """ Create new dictionary doc """
+
+    pass
+
+
 # TESTING ------------------------------------------------------------------------------------>
 
-client = server()
+connection = connect_server()
+db = connect_base(server=connection, dbname=INI_DBNAME)
 
-db = base(srv=client, dbname=INI_DBNAME)
-
-SAMPLE_DOC_TO_INSERT = {
-        '_id': generate_doc_uid_num(database=db, collection=ITEMS_COL),
-        'modified': DT_MODIFIED,
-        'active': True,
-        'type': 'Dish',
-        'group': 'Meat',
-        'name': 'Meat & Chicken Mix',
-        'munit': 'Portion',
-        'qnt': 1.0,
-        'price': 245.90
-    }
-
-insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
+# SAMPLE_DOC_TO_INSERT = {
+#         '_id': generate_doc_uid_num(database=db, collection=ITEMS_COL),
+#         'modified': DT_MODIFIED,
+#         'active': True,
+#         'type': 'Dish',
+#         'group': 'Meat',
+#         'name': 'Meat & Chicken Mix',
+#         'munit': 'Portion',
+#         'qnt': 1.0,
+#         'price': 245.90
+#     }
+#
+# insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
 
 
 # SAMPLE_DOC_UPDATE = {
