@@ -39,7 +39,17 @@ else:
     -> Update values if keys in selected doc;
 
 5. Update doc keys in all docs in col:
-    -> if new key not in col doc then update all docs in col
+    if col not empty:
+        -> Find doc with max number of keys;
+        -> if new key not in doc with max keys then update all docs in col with this key (end empty value);
+        ->
+
+6. Delete col:
+    if selected col is empty:
+        -> delete col;
+    else:
+        -> msg: "Collection not empty"
+
 
 
 
