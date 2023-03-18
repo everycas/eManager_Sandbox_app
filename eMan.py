@@ -147,6 +147,8 @@ def insert_one_doc_to_col(database: object, collection: str, document: dict):
     doc = document
     col.insert_one(doc)
 
+    print(f'New document in "{collection}" collection has been created successful.')
+
 
 def insert_many_docs_to_col(database: object, collection: str, docs_list: list):
 
@@ -154,6 +156,8 @@ def insert_many_docs_to_col(database: object, collection: str, docs_list: list):
 
     col = database[collection]
     col.insert_many(docs_list)
+
+    print(f'New documents in "{collection}" collection has been created successful.')
 
 
 def find_docs_in_col(database: object, collection: str, doc_key: str, doc_value: str):
@@ -179,6 +183,8 @@ def delete_one_doc_from_col(database: object, collection: str, doc_key: str, doc
     col = database[collection]
     col.delete_one({doc_key: doc_value})
 
+    print(f'Document in "{collection}" collection has been deleted successful.')
+
 
 def delete_many_docs_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
@@ -186,6 +192,8 @@ def delete_many_docs_from_col(database: object, collection: str, doc_key: str, d
 
     col = database[collection]
     col.delete_many({doc_key: doc_value})
+
+    print(f'Documents in "{collection}" collection has been deleted successful.')
 
 
 def delete_all_docs_from_col(database: object, collection: str):
@@ -195,6 +203,8 @@ def delete_all_docs_from_col(database: object, collection: str):
     col = database[collection]
     col.drop()
 
+    print(f'All documents in "{collection}" collection has been deleted successful.')
+
 
 def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_value: str, update: dict):
 
@@ -203,41 +213,43 @@ def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_v
     col = database[collection]
     col.update_one({doc_key: doc_value}, {'$set': update})
 
+    print(f'Document in "{collection}" collection has been deleted successful.')
+
 
 # DOCUMENT CONSTRUCTOR --------------------------------------------------------------------------------------->
 
-def new_dict_doc():
+def new_default_doc(database: object, collection: str):
 
-    """ Create new dictionary doc """
+    """
+    '_id': int -> read only
+    'created': str -> read only
+    'modified': str -> read only
+    'active': bool -> editable(True, False) from list
+    'name': str -> editable(not empty)
+    'comment': str -> editable(could be empty)
+    """
 
-    pass
+    return {
+        '_id':generate_doc_id_num(database=database, collection=collection),
+        'created':DT_STRING,
+        'modified':DT_MODIFIED,
+        'active': True,
+        'name':'New name',
+        'comment':''
+    }
 
 
 # TESTING ------------------------------------------------------------------------------------>
 
 connection = connect_server()
 db = connect_base(server=connection, dbname=INI_DBNAME)
-
-# SAMPLE_DOC_TO_INSERT = {
-#         '_id': generate_doc_uid_num(database=db, collection=ITEMS_COL),
-#         'modified': DT_MODIFIED,
-#         'active': True,
-#         'type': 'Dish',
-#         'group': 'Meat',
-#         'name': 'Meat & Chicken Mix',
-#         'munit': 'Portion',
-#         'qnt': 1.0,
-#         'price': 245.90
-#     }
-#
-# insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=SAMPLE_DOC_TO_INSERT)
+default_doc = new_default_doc(database=db, collection=ITEMS_COL)
 
 
-# SAMPLE_DOC_UPDATE = {
-#     'modified': DT_STRING,
-#     'name': 'Fried Chicken and Potatoes',
-#     'price': 176.90
-# }
+delete_all_docs_from_col(database=db, collection=ITEMS_COL)
+insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=default_doc)
+
+
 
 
 
