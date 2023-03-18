@@ -136,7 +136,7 @@ def connect_base(server: object, dbname: str):
                            f"Create new or set proper db name.")
 
 
-# DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) ------------------------------------------------->
+# DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) BASE FUNCTIONS (CRUD - create, read, update, delete) ----------->
 
 
 def insert_one_doc_to_col(database: object, collection: str, document: dict):
@@ -218,9 +218,13 @@ def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_v
 
 # DOCUMENT CONSTRUCTOR --------------------------------------------------------------------------------------->
 
-def new_default_doc(database: object, collection: str):
+def default_doc(database: object, collection: str):
 
     """
+    Using for create new docs in empty collection.
+    Or in collection where default docs only.
+    Or using as base doc when creating doc with extended keys.
+    Default keys:
     '_id': int -> read only
     'created': str -> read only
     'modified': str -> read only
@@ -243,11 +247,11 @@ def new_default_doc(database: object, collection: str):
 
 connection = connect_server()
 db = connect_base(server=connection, dbname=INI_DBNAME)
-default_doc = new_default_doc(database=db, collection=ITEMS_COL)
+doc = default_doc(database=db, collection=ITEMS_COL)
 
 
 delete_all_docs_from_col(database=db, collection=ITEMS_COL)
-insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=default_doc)
+# insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=default_doc)
 
 
 
