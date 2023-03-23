@@ -2,6 +2,7 @@ from ini_res import Ini
 import datetime as dt
 import uuid
 import pymongo
+import json
 
 # ini & log names
 INI_NAME = 'eMan.ini'
@@ -15,17 +16,32 @@ INI.log_name = LOG_NAME
 # db
 INI_DBNAME = INI.get(section='base', param='name')  # dbname from ini
 
+INI_LANG = INI.get(section='main', param='lang')
+
 DT_NOW = dt.datetime.now()
 DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
 DT_MODIFIED = f'{DT_STRING[:4]}.{DT_STRING[4:6]}.{DT_STRING[6:8]}-{DT_STRING[8:10]}:{DT_STRING[10:12]}:{DT_STRING[12:14]}'
-print(DT_MODIFIED)
+
+print(DT_NOW.strftime('%d.%m.%Y %H:%M:%S'))
 
 # default db collections
+DEF_COL_NAMES = ['settings', 'items', 'correspondents', 'orders', 'reports']
 CFG_COL = 'settings'
 ITEMS_COL = 'items'
-CORRS_COL = 'corrs'
+CORRS_COL = 'correspondents'
 WORK_COL = 'orders'
 REP_COL = 'reports'
+
+
+# Default document names -------------------------------------------------------------------->
+# Keys
+DEF_DOC_KEYS = ['_id', 'created', 'modified', 'active', 'Name', 'Comment']
+DEF_DOC_ID_KEY = '_id'
+DEF_DOC_CREATED_KEY = 'created'
+DEF_DOC_MODIF_KEY = 'modified'
+DEF_DOC_ACTIVE_KEY = 'active'
+DEF_DOC_NAME_KEY = 'Name'
+DEF_DOC_COMMENT_KEY = 'Comment'
 
 # MONGO API --------------------------------------------------------------------------------->
 
@@ -136,7 +152,7 @@ def connect_base(server: object, dbname: str):
                            f"Create new or set proper db name.")
 
 
-# DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) BASE FUNCTIONS (CRUD - create, read, update, delete) ----------->
+# DB COLLECTIONS (COLS) & DOCUMENTS (DOCS) BASIC FUNCTIONS (CRUD - create, read, update, delete) ----------->
 
 
 def insert_one_doc_to_col(database: object, collection: str, document: dict):
@@ -168,13 +184,29 @@ def find_docs_in_col(database: object, collection: str, doc_key: str, doc_value:
     return [doc for doc in col.find({doc_key: doc_value})]
 
 
-def read_all_docs_in_col(database: object, collection: str):
+def find_all_docs_in_col(database: object, collection: str):
 
     """ Find all docs in selected collection / Mongo find() """
 
     col = database[collection]
     return [doc for doc in col.find()]
 
+
+def find_first_any_doc_in_col(database: object, collection: str):
+
+    """ Find and return first any document in specified collection """
+
+    col = database[collection]
+    return col.find_one()
+
+def find_last_doc_in_col(database: object, collection: str):
+
+    """ Find and return last document in specified collection """
+
+    col = database[collection]
+    docs = col.find().sort('_id', -1).limit(1)
+    for doc in docs:
+        return doc
 
 def delete_one_doc_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
@@ -216,9 +248,9 @@ def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_v
     print(f'Document in "{collection}" collection has been deleted successful.')
 
 
-# DOCUMENT CONSTRUCTOR --------------------------------------------------------------------------------------->
+# eMan DOCUMENT CONSTRUCTOR --------------------------------------------------------------------------------------->
 
-def default_doc(database: object, collection: str):
+def eman_default_doc(database: object, collection: str):
 
     """
     Using for create new docs in empty collection.
@@ -229,30 +261,86 @@ def default_doc(database: object, collection: str):
     'created': str -> read only
     'modified': str -> read only
     'active': bool -> editable(True, False) from list
-    'name': str -> editable(not empty)
-    'comment': str -> editable(could be empty)
+    'Name': str -> editable(not empty), user defined
+    'Comment': str -> editable(could be empty), user defined
     """
 
     return {
-        '_id':generate_doc_id_num(database=database, collection=collection),
-        'created':DT_STRING,
-        'modified':DT_MODIFIED,
-        'active': True,
-        'name':'New name',
-        'comment':''
+        DEF_DOC_ID_KEY:generate_doc_id_num(database=database, collection=collection),
+        DEF_DOC_CREATED_KEY:DT_MODIFIED,
+        DEF_DOC_MODIF_KEY:DT_MODIFIED,
+        DEF_DOC_ACTIVE_KEY: True,
+        DEF_DOC_NAME_KEY:'New name',
+        DEF_DOC_COMMENT_KEY:''
     }
+
+def eman_insert_new_doc(database: object, collection: str):
+
+    """  """
+
+    default_doc = eman_default_doc(database=database, collection=collection)
+
+    if not collection:  # if collection is empty insert default doc
+
+        insert_one_doc_to_col(database=database, collection=collection, document=default_doc)
+
+    else:  # if col not empty, take last doc and insert it with 'name':'New name'
+
+        last_doc_in_col = find_last_doc_in_col(database=db, collection=collection)
+
+        if len(last_doc_in_col) == len(default_doc):
+
+            insert_one_doc_to_col(database=database, collection=collection, document=default_doc)
+
+        else:
+
+            new_doc = {}
+            for k,v in last_doc_in_col.items():
+                if k == DEF_DOC_ID_KEY:
+                    new_doc[DEF_DOC_ID_KEY] = generate_doc_id_num(database=database, collection=collection)
+                else:
+                    if k == DEF_DOC_CREATED_KEY:
+                        new_doc[DEF_DOC_CREATED_KEY] = DT_MODIFIED
+                    else:
+                        if k == DEF_DOC_MODIF_KEY:
+                            new_doc[DEF_DOC_MODIF_KEY] = DT_MODIFIED
+                        else:
+                            if k == DEF_DOC_ACTIVE_KEY:
+                                new_doc[DEF_DOC_ACTIVE_KEY] = True
+                            else:
+                                if k == DEF_DOC_NAME_KEY:
+                                    new_doc[DEF_DOC_NAME_KEY] = 'New name'
+                                else:
+                                    if k == DEF_DOC_COMMENT_KEY:
+                                        new_doc
+
+
+
+                pass
 
 
 # TESTING ------------------------------------------------------------------------------------>
 
 connection = connect_server()
 db = connect_base(server=connection, dbname=INI_DBNAME)
-doc = default_doc(database=db, collection=ITEMS_COL)
+doc = eman_default_doc(database=db, collection=ITEMS_COL)
 
 
-delete_all_docs_from_col(database=db, collection=ITEMS_COL)
-# insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=default_doc)
+# delete_all_docs_from_col(database=db, collection=ITEMS_COL)
+insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=doc)
 
+# cur_doc = find_last_doc_in_col(database=db, collection=ITEMS_COL)
+# print(cur_doc.keys())
+# print(cur_doc.values())
+
+d = {}
+d['_id'] = generate_doc_id_num(database=db, collection=ITEMS_COL)
+d['name'] = 'New name'
+print(d)
+
+for k,v in d.items():
+    print(k)
+    print(v)
 
 
 
