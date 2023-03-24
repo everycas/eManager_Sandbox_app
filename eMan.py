@@ -2,7 +2,6 @@ from ini_res import Ini
 import datetime as dt
 import uuid
 import pymongo
-import json
 
 # ini & log names
 INI_NAME = 'eMan.ini'
@@ -16,32 +15,23 @@ INI.log_name = LOG_NAME
 # db
 INI_DBNAME = INI.get(section='base', param='name')  # dbname from ini
 
+# ru/eng date time string
 INI_LANG = INI.get(section='main', param='lang')
-
 DT_NOW = dt.datetime.now()
-DT_STRING = ''.join([char for char in str(dt.datetime.now()) if char.isnumeric()])[: 20]  # 'yyyymmddhhmmssms'
-DT_MODIFIED = f'{DT_STRING[:4]}.{DT_STRING[4:6]}.{DT_STRING[6:8]}-{DT_STRING[8:10]}:{DT_STRING[10:12]}:{DT_STRING[12:14]}'
 
-print(DT_NOW.strftime('%d.%m.%Y %H:%M:%S'))
+if INI_LANG == 'ru':
+    DT_NOW_STRING = DT_NOW.strftime('%d.%m.%Y %H:%M:%S.%f')  # ru date format
+else:  # eng
+    DT_NOW_STRING = DT_NOW.strftime('%Y.%m.%d %H:%M:%S.%f')  # en date format
+
+print(DT_NOW.strftime('%f')[:4])
 
 # default db collections
-DEF_COL_NAMES = ['settings', 'items', 'correspondents', 'orders', 'reports']
-CFG_COL = 'settings'
-ITEMS_COL = 'items'
-CORRS_COL = 'correspondents'
-WORK_COL = 'orders'
-REP_COL = 'reports'
-
+DEF_COLS = ['settings', 'items', 'correspondents', 'orders', 'reports']
 
 # Default document names -------------------------------------------------------------------->
 # Keys
 DEF_DOC_KEYS = ['_id', 'created', 'modified', 'active', 'Name', 'Comment']
-DEF_DOC_ID_KEY = '_id'
-DEF_DOC_CREATED_KEY = 'created'
-DEF_DOC_MODIF_KEY = 'modified'
-DEF_DOC_ACTIVE_KEY = 'active'
-DEF_DOC_NAME_KEY = 'Name'
-DEF_DOC_COMMENT_KEY = 'Comment'
 
 # MONGO API --------------------------------------------------------------------------------->
 
@@ -52,12 +42,16 @@ def generate_dbname_string():
 
     """ Generate db name / mask: YYYYMMDD(8)-HHMM(4)-SSMS(4)-BASE(4)-EMAN(4)UUID(8) """
 
-    dbname_yyyymmdd = f'{DT_STRING[:8]}-'
-    dbname_hhmmss = f'{DT_STRING[8:12]}-'
-    dbname_msmsms = f'{DT_STRING[12:16]}-'
-    dbname_uuid = f'EMAN{str(uuid.getnode())[4:12]}'
+    if INI_LANG == 'ru':
+        date = DT_NOW.strftime('%d%m%Y')  # ru date format
+    else:
+        date = DT_NOW.strftime('%Y%m%d')  # en date format
 
-    return dbname_yyyymmdd + dbname_hhmmss + dbname_msmsms + 'BASE-' + dbname_uuid
+    hhmm = DT_NOW.strftime('%H%M')  # hour min
+    ssms = DT_NOW.strftime('%S%f')[:4]  # secs micro-secs
+    uid = str(uuid.getnode())[:8]  # uuid
+
+    return f'{date}-{hhmm}-{ssms}-BASE-EMAN{uid}'
 
 
 def generate_guid_string(num_string: str):
@@ -67,9 +61,14 @@ def generate_guid_string(num_string: str):
 
     add_zero = ''
     guid_prefix = '{'
-    guid_yyyymmdd = f'{DT_STRING[:8]}-'
-    guid_hhmm = f'{DT_STRING[8:12]}-'
-    guid_ssms = f'{DT_STRING[12:16]}-'
+
+    if INI_LANG == 'ru':
+        guid_yyyymmdd = DT_NOW.strftime('%d%m%Y')  # ru date format
+    else:
+        guid_yyyymmdd = DT_NOW.strftime('%Y%m%d')  # en date format
+
+    guid_hhmm = f'{DT_NOW.strftime("%H%M")}-'
+    guid_ssms = f'{DT_NOW.strftime("%S%f")[:4]}-'
     guid_uuid = f'{str(uuid.getnode())[:4]}-'
     guid_postfix = '}'
 
@@ -253,7 +252,7 @@ def update_one_doc_in_col(database: object, collection: str, doc_key: str, doc_v
 def eman_default_doc(database: object, collection: str):
 
     """
-    Using for create new docs in empty collection.
+    Default doc format using for create new docs in empty collection.
     Or in collection where default docs only.
     Or using as base doc when creating doc with extended keys.
     Default keys:
@@ -266,17 +265,17 @@ def eman_default_doc(database: object, collection: str):
     """
 
     return {
-        DEF_DOC_ID_KEY:generate_doc_id_num(database=database, collection=collection),
-        DEF_DOC_CREATED_KEY:DT_MODIFIED,
-        DEF_DOC_MODIF_KEY:DT_MODIFIED,
-        DEF_DOC_ACTIVE_KEY: True,
-        DEF_DOC_NAME_KEY:'New name',
-        DEF_DOC_COMMENT_KEY:''
+        DEF_DOC_KEYS[0]:generate_doc_id_num(database=database, collection=collection),
+        DEF_DOC_KEYS[1]:DT_NOW_STRING,
+        DEF_DOC_KEYS[2]:DT_NOW_STRING,
+        DEF_DOC_KEYS[3]: True,
+        DEF_DOC_KEYS[4]:'New name',
+        DEF_DOC_KEYS[5]:''
     }
 
 def eman_insert_new_doc(database: object, collection: str):
 
-    """  """
+    """  Insert new doc using the same doc-format that is in collection """
 
     default_doc = eman_default_doc(database=database, collection=collection)
 
@@ -286,61 +285,43 @@ def eman_insert_new_doc(database: object, collection: str):
 
     else:  # if col not empty, take last doc and insert it with 'name':'New name'
 
-        last_doc_in_col = find_last_doc_in_col(database=db, collection=collection)
-
-        if len(last_doc_in_col) == len(default_doc):
-
-            insert_one_doc_to_col(database=database, collection=collection, document=default_doc)
-
-        else:
-
-            new_doc = {}
-            for k,v in last_doc_in_col.items():
-                if k == DEF_DOC_ID_KEY:
-                    new_doc[DEF_DOC_ID_KEY] = generate_doc_id_num(database=database, collection=collection)
-                else:
-                    if k == DEF_DOC_CREATED_KEY:
-                        new_doc[DEF_DOC_CREATED_KEY] = DT_MODIFIED
-                    else:
-                        if k == DEF_DOC_MODIF_KEY:
-                            new_doc[DEF_DOC_MODIF_KEY] = DT_MODIFIED
-                        else:
-                            if k == DEF_DOC_ACTIVE_KEY:
-                                new_doc[DEF_DOC_ACTIVE_KEY] = True
-                            else:
-                                if k == DEF_DOC_NAME_KEY:
-                                    new_doc[DEF_DOC_NAME_KEY] = 'New name'
-                                else:
-                                    if k == DEF_DOC_COMMENT_KEY:
-                                        new_doc
-
-
-
-                pass
+        pass
 
 
 # TESTING ------------------------------------------------------------------------------------>
 
 connection = connect_server()
-db = connect_base(server=connection, dbname=INI_DBNAME)
-doc = eman_default_doc(database=db, collection=ITEMS_COL)
+
+if not INI_DBNAME:
+    dbname = generate_dbname_string()
+    INI.set(section='base', param='name',data=dbname)
+else:
+    dbname = INI_DBNAME
+
+db = connect_base(server=connection, dbname=dbname)
+
+items_col = DEF_COLS[1]
+doc = eman_default_doc(database=db, collection=items_col)
+
+insert_one_doc_to_col(database=db, collection=items_col, document=doc)
 
 
-# delete_all_docs_from_col(database=db, collection=ITEMS_COL)
-insert_one_doc_to_col(database=db, collection=ITEMS_COL, document=doc)
+
+# delete_all_docs_from_col(database=db, collection=items_col)
+# insert_one_doc_to_col(database=db, collection=items_col, document=doc)
 
 # cur_doc = find_last_doc_in_col(database=db, collection=ITEMS_COL)
 # print(cur_doc.keys())
 # print(cur_doc.values())
 
-d = {}
-d['_id'] = generate_doc_id_num(database=db, collection=ITEMS_COL)
-d['name'] = 'New name'
-print(d)
-
-for k,v in d.items():
-    print(k)
-    print(v)
+# d = {}
+# d['_id'] = generate_doc_id_num(database=db, collection=items_col)
+# d['name'] = 'New name'
+# print(d)
+#
+# for k,v in d.items():
+#     print(k)
+#     print(v)
 
 
 
