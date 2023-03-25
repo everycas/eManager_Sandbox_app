@@ -60,17 +60,17 @@ def generate_guid_string(num_string: str):
      '{YYYYMMDD(8)-HHMM(4)-SSMS(4)-UUID(4)-CODE(12)}' """
 
     add_zero = ''
-    guid_prefix = '{'
+    prefix = '{'
 
     if INI_LANG == 'ru':
-        guid_yyyymmdd = DT_NOW.strftime('%d%m%Y')  # ru date format
+        date = DT_NOW.strftime('%d%m%Y')  # ru date format
     else:
-        guid_yyyymmdd = DT_NOW.strftime('%Y%m%d')  # en date format
+        date = DT_NOW.strftime('%Y%m%d')  # en date format
 
-    guid_hhmm = f'{DT_NOW.strftime("%H%M")}-'
-    guid_ssms = f'{DT_NOW.strftime("%S%f")[:4]}-'
-    guid_uuid = f'{str(uuid.getnode())[:4]}-'
-    guid_postfix = '}'
+    hhmm = DT_NOW.strftime("%H%M")
+    ssms = DT_NOW.strftime("%S%f")[:4]
+    uid = str(uuid.getnode())[:4]
+    postfix = '}'
 
     code = ''
     if len(num_string) < 12:
@@ -84,9 +84,7 @@ def generate_guid_string(num_string: str):
     else:
         code = num_string
 
-    result_guid = guid_prefix + guid_yyyymmdd + guid_hhmm + guid_ssms + guid_uuid + code + guid_postfix
-
-    return result_guid
+    return f'{prefix}{date}-{hhmm}-{ssms}-{uid}-{code}{postfix}'
 
 
 def generate_doc_id_num(database: object, collection: str):
@@ -198,14 +196,15 @@ def find_first_any_doc_in_col(database: object, collection: str):
     col = database[collection]
     return col.find_one()
 
+
 def find_last_doc_in_col(database: object, collection: str):
 
     """ Find and return last document in specified collection """
 
     col = database[collection]
     docs = col.find().sort('_id', -1).limit(1)
-    for doc in docs:
-        return doc
+    for d in docs:
+        return d
 
 def delete_one_doc_from_col(database: object, collection: str, doc_key: str, doc_value: str):
 
@@ -265,13 +264,14 @@ def eman_default_doc(database: object, collection: str):
     """
 
     return {
-        DEF_DOC_KEYS[0]:generate_doc_id_num(database=database, collection=collection),
-        DEF_DOC_KEYS[1]:DT_NOW_STRING,
-        DEF_DOC_KEYS[2]:DT_NOW_STRING,
-        DEF_DOC_KEYS[3]: True,
-        DEF_DOC_KEYS[4]:'New name',
-        DEF_DOC_KEYS[5]:''
+        DEF_DOC_KEYS[0]:generate_doc_id_num(database=database, collection=collection),  # _id
+        DEF_DOC_KEYS[1]:DT_NOW_STRING,  # created
+        DEF_DOC_KEYS[2]:DT_NOW_STRING,  # modified
+        DEF_DOC_KEYS[3]: True,  # active
+        DEF_DOC_KEYS[4]:'New name',  # name
+        DEF_DOC_KEYS[5]:''  # comment
     }
+
 
 def eman_insert_new_doc(database: object, collection: str):
 
@@ -283,10 +283,24 @@ def eman_insert_new_doc(database: object, collection: str):
 
         insert_one_doc_to_col(database=database, collection=collection, document=default_doc)
 
-    else:  # if col not empty, take last doc and insert it with 'name':'New name'
+    else:  # if col not empty, take last doc and insert it with 'name':'New name' and other keys
 
-        pass
+        last_doc_from_col  = find_last_doc_in_col(database=database, collection=collection)
 
+        doc_for_insert = default_doc
+        for k,v in last_doc_from_col.items():
+            print(k)
+            if k not in DEF_DOC_KEYS:
+                if v.isdigit():
+                    doc_for_insert[k] = 0
+                else:
+                    doc_for_insert[k] = ''
+
+        print(doc_for_insert)
+        insert_one_doc_to_col(database=database, collection=collection, document=doc_for_insert)
+
+
+def eman_add_new_keyvalue_
 
 # TESTING ------------------------------------------------------------------------------------>
 
@@ -302,15 +316,12 @@ db = connect_base(server=connection, dbname=dbname)
 
 items_col = DEF_COLS[1]
 doc = eman_default_doc(database=db, collection=items_col)
-
 insert_one_doc_to_col(database=db, collection=items_col, document=doc)
-
-
-
 # delete_all_docs_from_col(database=db, collection=items_col)
 # insert_one_doc_to_col(database=db, collection=items_col, document=doc)
+eman_insert_new_doc(database=db, collection=items_col)
 
-# cur_doc = find_last_doc_in_col(database=db, collection=ITEMS_COL)
+# cur_doc = find_last_doc_in_col(database=db, collection=items_col)
 # print(cur_doc.keys())
 # print(cur_doc.values())
 
